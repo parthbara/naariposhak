@@ -1,0 +1,80 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color: #202124;
+  background: #fff8ee;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.botanical-bg {
+  background-image:
+    radial-gradient(circle at top left, rgba(138, 28, 42, 0.08), transparent 28rem),
+    radial-gradient(circle at bottom right, rgba(99, 111, 74, 0.14), transparent 25rem);
+}
+
+.line-motif {
+  position: relative;
+}
+
+.line-motif::before,
+.line-motif::after {
+  position: absolute;
+  content: '';
+  pointer-events: none;
+  border: 1px solid rgba(138, 28, 42, 0.18);
+  border-left: 0;
+  border-bottom: 0;
+  border-radius: 999px;
+}
+
+.line-motif::before {
+  width: 9rem;
+  height: 9rem;
+  top: 3rem;
+  right: 5%;
+  transform: rotate(-28deg);
+}
+
+.line-motif::after {
+  width: 5.5rem;
+  height: 5.5rem;
+  left: 4%;
+  bottom: 3rem;
+  transform: rotate(142deg);
+}
+
+.admin-shell {
+  background:
+    linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+}
+
+@media (max-width: 768px) {
+  .line-motif::before,
+  .line-motif::after {
+    display: none;
+  }
+}
