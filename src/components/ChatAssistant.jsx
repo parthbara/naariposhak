@@ -44,12 +44,12 @@ export default function ChatAssistant() {
       if (isSupabaseConfigured) {
         const { data: products, error: dbError } = await supabase
           .from('products')
-          .select('title, category, price, description, stock_count, ai_extra_info');
+          .select('title, category, price, description, stock_count');
 
         if (!dbError && products && products.length > 0) {
           rulesContext = `- ONLY recommend products from the inventory below. NEVER invent product names, prices, or availability.\n- If asked about a product not in inventory, say we don't carry it currently and suggest checking back or contacting us.`;
           productContext = '## Current Inventory\n' + products.map((p) =>
-            `- **${p.title}** | Category: ${p.category} | Price: Rs. ${p.price} | Stock: ${p.stock_count} | ${p.description}${p.ai_extra_info ? ` | Note: ${p.ai_extra_info}` : ''}`
+            `- **${p.title}** | Category: ${p.category} | Price: Rs. ${p.price} | Stock: ${p.stock_count} | ${p.description}`
           ).join('\n');
         } else {
           rulesContext = `- CRITICAL: We currently have NO products in stock and NO products listed online. You MUST NOT list, invent, or suggest any products. If asked about clothing, state clearly that the store is currently empty and they should check back later or contact us on WhatsApp.`;
