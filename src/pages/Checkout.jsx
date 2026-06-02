@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, ImagePlus, LockKeyhole, ReceiptText, RefreshCw } from 'lucide-react';
-import { paymentOptions } from '../data/paymentOptions.js';
-import { fallbackProducts } from '../data/fallbackProducts.js';
+import useSiteSettings from '../lib/useSiteSettings.js';
 import { isSupabaseConfigured, supabase } from '../lib/supabase.js';
 
 const currencyFormatter = new Intl.NumberFormat('en-NP', {
@@ -21,7 +20,8 @@ export default function Checkout() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState(paymentOptions[0].id);
+  const { paymentOptions } = useSiteSettings();
+  const [paymentMethodIndex, setPaymentMethodIndex] = useState(0);
   const [proofFile, setProofFile] = useState(null);
   const [form, setForm] = useState({
     customer_name: '',
@@ -31,7 +31,7 @@ export default function Checkout() {
     notes: '',
   });
 
-  const selectedPayment = paymentOptions.find((option) => option.id === paymentMethod) || paymentOptions[0];
+  const selectedPayment = paymentOptions?.[paymentMethodIndex] || paymentOptions?.[0] || {};
   const proofPreview = useMemo(() => {
     if (!proofFile) return '';
     return URL.createObjectURL(proofFile);
@@ -85,19 +85,6 @@ export default function Checkout() {
     async function fetchProduct() {
       if (!isSupabaseConfigured) {
         setError('Checkout will work after Supabase keys are added.');
-        setLoading(false);
-        return;
-      }
-
-      const isFallback = String(productId).startsWith('fallback-');
-      if (isFallback) {
-        const fallbackProd = fallbackProducts.find((p) => p.id === productId);
-        if (fallbackProd) {
-          setProduct(fallbackProd);
-        } else {
-          setError('This product is no longer available.');
-          setProduct(null);
-        }
         setLoading(false);
         return;
       }
@@ -174,11 +161,11 @@ export default function Checkout() {
       customer_email: session.user.email,
       customer_address: form.customer_address.trim() || null,
       quantity,
-      product_id: String(product.id).startsWith('fallback-') ? null : product.id,
+      product_id: product.id,
       product_title: product.title,
       item: product.title,
       total_amount: total,
-      payment_method: paymentMethod,
+      payment_method: selectedPayment.label || 'Unknown',
       payment_proof_path: proofPath,
       notes: form.notes.trim() || null,
       status: 'pending',
@@ -253,20 +240,20 @@ export default function Checkout() {
             {product && (
               <form onSubmit={handleSubmit} className="mt-6 grid gap-5">
                 <div className="grid gap-3 sm:grid-cols-3">
-                  {paymentOptions.map((option) => (
+                  {paymentOptions.map((option, idx) => (
                     <button
-                      key={option.id}
+                      key={idx}
                       type="button"
-                      onClick={() => setPaymentMethod(option.id)}
+                      onClick={() => setPaymentMethodIndex(idx)}
                       className={`rounded-lg border p-3 text-left transition ${
-                        paymentMethod === option.id
+                        paymentMethodIndex === idx
                           ? 'border-maroon-700 bg-maroon-50'
                           : 'border-stone-200 bg-white hover:border-maroon-200'
                       }`}
                     >
                       <img
-                        src={option.qrImage}
-                        alt={`${option.label} payment QR placeholder`}
+                        src={option.qrImageUrl || option.qrImage}
+                        alt={`${option.label} payment QR`}
                         className="aspect-square w-full rounded-md border border-stone-100 object-cover"
                       />
                       <span className="mt-2 block text-sm font-extrabold text-maroon-900">
@@ -285,7 +272,7 @@ export default function Checkout() {
                   </p>
                   <div className="mt-3 grid gap-4 sm:grid-cols-[180px_1fr] sm:items-center">
                     <img
-                      src={selectedPayment.qrImage}
+                      src={selectedPayment.qrImageUrl || selectedPayment.qrImage}
                       alt={`${selectedPayment.label} payment QR`}
                       className="aspect-square w-full max-w-[220px] rounded-md border border-maroon-100 bg-white object-cover"
                     />

@@ -1,19 +1,17 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
-  ClipboardCheck,
   Instagram,
   MapPin,
   PackageCheck,
   PhoneCall,
-  QrCode,
   ShoppingBag,
   Sparkles,
 } from 'lucide-react';
 import ProductCard from '../components/ProductCard.jsx';
-import ChatAssistant from '../components/ChatAssistant.jsx';
-import { fallbackProducts } from '../data/fallbackProducts.js';
-import { contactInfo, whatsappUrl } from '../data/contactInfo.js';
+import useSiteSettings from '../lib/useSiteSettings.js';
+import { supabase } from '../lib/supabase.js';
 
 const serviceCards = [
   {
@@ -33,40 +31,43 @@ const serviceCards = [
   },
 ];
 
-const orderSteps = [
-  {
-    title: 'Discover Elegance',
-    text: 'Browse our exclusive collection of kurtas and sarees crafted for perfection.',
-    icon: Sparkles,
-  },
-  {
-    title: 'Seamless Checkout',
-    text: 'Place your order securely via digital payment and easily upload your confirmation.',
-    icon: QrCode,
-  },
-  {
-    title: 'Prompt Delivery',
-    text: 'Your beautifully packaged garment will be dispatched to your doorstep swiftly.',
-    icon: PackageCheck,
-  },
-];
-
 export default function Home() {
-  const featured = fallbackProducts.slice(0, 3);
+  const { contactInfo, whatsappUrl, landingPage } = useSiteSettings();
+  const [featured, setFeatured] = useState([]);
+  const [activeSlide, setActiveSlide] = useState(0);
+
+  useEffect(() => {
+    async function fetchFeatured() {
+      const { data } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(3);
+      if (data) setFeatured(data);
+    }
+    fetchFeatured();
+  }, []);
+
+  useEffect(() => {
+    if (!landingPage?.heroImages?.length || landingPage.heroImages.length <= 1) return;
+    const interval = setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % landingPage.heroImages.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [landingPage?.heroImages]);
 
   return (
     <div className="botanical-bg">
-      <section className="line-motif mx-auto grid max-w-7xl items-center gap-8 px-4 py-10 sm:px-6 md:grid-cols-[1.05fr_0.95fr] lg:gap-10 lg:px-8 lg:py-16">
+      <section className="line-motif mx-auto grid max-w-7xl items-center gap-8 px-4 py-10 sm:px-6 md:grid-cols-2 lg:gap-14 lg:px-8 lg:py-16">
         <div className="relative z-10">
           <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-maroon-700 sm:text-sm sm:tracking-[0.22em]">
-            Kurtas, sarees & complete women&apos;s wear
+            {landingPage?.heroSubtitle}
           </p>
           <h1 className="mt-4 max-w-3xl font-serif text-4xl font-bold leading-tight text-maroon-900 sm:text-6xl">
-            Nari Poshak
+            {landingPage?.heroTitle}
           </h1>
           <p className="mt-5 max-w-xl text-base leading-7 text-stone-700 sm:text-lg sm:leading-8">
-            Sophisticated women&apos;s wear with elegant cuts, thoughtful fabric selection, and
-            ready garments for everyday confidence and special moments.
+            {landingPage?.heroDescription}
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
@@ -85,17 +86,36 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="grid grid-cols-[0.85fr_1fr] gap-3 sm:gap-4">
-          <img
-            src="https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=900&q=85"
-            alt="Elegant embroidered kurta"
-            className="mt-8 aspect-[3/4] w-full rounded-lg object-cover shadow-soft sm:mt-14"
-          />
-          <img
-            src="https://images.unsplash.com/photo-1610189012035-7e3fcbdaeb1a?auto=format&fit=crop&w=900&q=85"
-            alt="Draped saree styling"
-            className="aspect-[3/4] w-full rounded-lg object-cover shadow-soft"
-          />
+        <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl shadow-soft sm:aspect-[4/5]">
+          {landingPage?.heroImages?.map((img, index) => (
+            <img
+              key={index}
+              src={img}
+              alt="Hero slide"
+              className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1000 ${
+                activeSlide === index ? 'opacity-100' : 'opacity-0'
+              }`}
+            />
+          ))}
+          {landingPage?.heroImages?.length > 1 && (
+            <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2 rounded-full bg-black/20 px-3 py-2 backdrop-blur-md">
+              {landingPage.heroImages.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setActiveSlide(index)}
+                  className={`h-1.5 rounded-full transition-all ${
+                    activeSlide === index ? 'w-6 bg-white' : 'w-2 bg-white/50 hover:bg-white/75'
+                  }`}
+                  aria-label={`Go to slide ${index + 1}`}
+                />
+              ))}
+            </div>
+          )}
+          {!landingPage?.heroImages?.length && (
+            <div className="flex h-full w-full items-center justify-center bg-maroon-50 text-maroon-300">
+              <Sparkles size={48} />
+            </div>
+          )}
         </div>
       </section>
 
@@ -118,41 +138,13 @@ export default function Home() {
           </div>
           <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {featured.map((product) => (
-              <ProductCard key={product.id} product={product} fallback />
+              <ProductCard key={product.id} product={product} />
             ))}
           </div>
         </div>
       </section>
 
-      <section className="bg-maroon-900 py-12 text-white">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
-            <div>
-              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-white/60">
-                Personal ordering
-              </p>
-              <h2 className="mt-3 font-serif text-4xl font-bold">Seamless Ordering & Delivery.</h2>
-              <p className="mt-4 text-sm leading-7 text-white/75">
-                Enjoy a flawless shopping experience. Browse our curated collection, checkout securely online, and get your elegant garments delivered right to your door.
-              </p>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-3">
-              {orderSteps.map((step) => {
-                const Icon = step.icon;
-                return (
-                  <article key={step.title} className="rounded-lg bg-white/10 p-4 ring-1 ring-white/15">
-                    <div className="grid h-10 w-10 place-items-center rounded-full bg-white text-maroon-800">
-                      <Icon size={18} />
-                    </div>
-                    <h3 className="mt-4 font-serif text-xl font-bold">{step.title}</h3>
-                    <p className="mt-2 text-sm leading-6 text-white/70">{step.text}</p>
-                  </article>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Personal ordering section removed as requested */}
 
       <section id="collection" className="py-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -209,7 +201,6 @@ export default function Home() {
         </div>
       </section>
 
-      <ChatAssistant />
     </div>
   );
 }

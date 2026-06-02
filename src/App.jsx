@@ -12,6 +12,9 @@ import ProductDetail from './pages/ProductDetail.jsx';
 import AdminOrders from './pages/AdminOrders.jsx';
 import AdminStock from './pages/AdminStock.jsx';
 import AdminLedger from './pages/AdminLedger.jsx';
+import AdminDashboard from './pages/AdminDashboard.jsx';
+import AdminSettings from './pages/AdminSettings.jsx';
+import AdminCustomers from './pages/AdminCustomers.jsx';
 
 export default function App() {
   return (
@@ -34,10 +37,12 @@ export default function App() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<Navigate to="/admin/orders" replace />} />
+        <Route index element={<AdminDashboard />} />
         <Route path="orders" element={<AdminOrders />} />
         <Route path="stock" element={<AdminStock />} />
         <Route path="ledger" element={<AdminLedger />} />
+        <Route path="customers" element={<AdminCustomers />} />
+        <Route path="settings" element={<AdminSettings />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

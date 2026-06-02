@@ -2,9 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Filter, RefreshCw } from 'lucide-react';
 import ProductCard from '../components/ProductCard.jsx';
-import { fallbackProducts } from '../data/fallbackProducts.js';
-import { contactInfo } from '../data/contactInfo.js';
-import { isSupabaseConfigured, supabase } from '../lib/supabase.js';
+import useSiteSettings from '../lib/useSiteSettings.js';
+import { supabase } from '../lib/supabase.js';
 
 const filters = [
   { label: 'All', value: 'all' },
@@ -15,45 +14,34 @@ const filters = [
 export default function Shop() {
   const navigate = useNavigate();
   const [category, setCategory] = useState('all');
+  const { contactInfo } = useSiteSettings();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
   useEffect(() => {
     async function fetchProducts() {
-      if (!isSupabaseConfigured) {
-        setProducts([]);
-        setLoading(false);
-        return;
-      }
-
       setLoading(true);
-      setError('');
-
       const { data, error: productError } = await supabase
         .from('products')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (productError) {
-        setError(productError.message);
+        console.error(productError.message);
         setProducts([]);
       } else {
         setProducts(data || []);
       }
-
       setLoading(false);
     }
 
     fetchProducts();
   }, []);
 
-  const usingFallback = !products.length;
   const visibleProducts = useMemo(() => {
-    const source = usingFallback ? fallbackProducts : products;
-    if (category === 'all') return source;
-    return source.filter((product) => product.category === category);
-  }, [category, products, usingFallback]);
+    if (category === 'all') return products;
+    return products.filter((product) => product.category === category);
+  }, [category, products]);
 
   function openCheckout(product) {
     navigate(`/checkout/${product.id}`);
@@ -94,22 +82,14 @@ export default function Shop() {
           </div>
         </div>
 
-        {error && (
-          <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
-            Supabase products could not be loaded: {error}. Showing sample inventory.
-          </div>
-        )}
-
-        {usingFallback && !loading && !error && (
-          <div className="mt-5 rounded-lg border border-maroon-100 bg-white/75 px-4 py-3 text-sm font-semibold text-stone-600">
-            Showing sample inventory until products are added in Supabase.
-          </div>
-        )}
-
         {loading ? (
           <div className="mt-10 flex items-center justify-center gap-3 rounded-lg bg-white/80 py-16 text-sm font-bold text-maroon-800">
             <RefreshCw size={18} className="animate-spin" />
             Loading products...
+          </div>
+        ) : visibleProducts.length === 0 ? (
+          <div className="mt-10 rounded-lg border border-maroon-100 bg-white/75 px-4 py-8 text-center text-sm font-semibold text-stone-600">
+            No products available at the moment. Please check back later.
           </div>
         ) : (
           <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -117,7 +97,6 @@ export default function Shop() {
               <ProductCard
                 key={product.id}
                 product={product}
-                fallback={usingFallback}
                 onOrder={openCheckout}
               />
             ))}

@@ -206,3 +206,42 @@ using (bucket_id = 'payment-proofs' and public.is_admin());
 insert into public.admin_users (email, role)
 values ('naariposhak@admin.com', 'superadmin')
 on conflict (email) do update set role = 'superadmin';
+
+-- Site settings table
+create table if not exists public.site_settings (
+  key text primary key,
+  value jsonb not null default '{}',
+  updated_at timestamptz not null default now()
+);
+
+alter table public.site_settings enable row level security;
+
+create policy "Public can read site settings"
+  on public.site_settings for select to anon, authenticated using (true);
+
+create policy "Admins can manage site settings"
+  on public.site_settings for all to authenticated
+  using (public.is_admin()) with check (public.is_admin());
+
+-- Site assets bucket (QR images etc.)
+insert into storage.buckets (id, name, public)
+  values ('site-assets', 'site-assets', true)
+  on conflict (id) do update set public = true;
+
+create policy "Admins can manage site assets"
+  on storage.objects for all to authenticated
+  using (bucket_id = 'site-assets' and public.is_admin())
+  with check (bucket_id = 'site-assets' and public.is_admin());
+
+create policy "Public can view site assets"
+  on storage.objects for select to anon, authenticated
+  using (bucket_id = 'site-assets');
+
+-- Seed defaults
+insert into public.site_settings (key, value) values
+  ('payment_options', '[]'::jsonb),
+  ('contact_info', '{}'::jsonb),
+  ('announcement', '{"enabled": false, "text": "", "color": "#8A1C2A"}'::jsonb),
+  ('site_meta', '{}'::jsonb),
+  ('ai_config', '{"enabled": true, "model": "z-ai/glm-5.1"}'::jsonb)
+on conflict (key) do nothing;

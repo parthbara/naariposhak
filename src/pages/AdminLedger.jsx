@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { RefreshCw, Save, Search, Trash2 } from 'lucide-react';
+import { RefreshCw, Search, Trash2, Edit, X, Save, ImagePlus } from 'lucide-react';
 import { supabase } from '../lib/supabase.js';
 
 function formatDate(date) {
@@ -21,13 +21,17 @@ function formatMoney(value) {
 
 export default function AdminLedger() {
   const [products, setProducts] = useState([]);
-  const [drafts, setDrafts] = useState({});
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('all');
   const [loading, setLoading] = useState(true);
-  const [savingId, setSavingId] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  
+  // Modal State
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState(null);
+  const [uploading, setUploading] = useState(false);
 
   async function fetchProducts() {
     setLoading(true);
@@ -42,23 +46,9 @@ export default function AdminLedger() {
     if (productError) {
       setError(productError.message);
       setProducts([]);
-      setDrafts({});
     } else {
-      const nextProducts = data || [];
-      setProducts(nextProducts);
-      setDrafts(
-        Object.fromEntries(
-          nextProducts.map((product) => [
-            product.id,
-            {
-              price: product.price,
-              stock_count: product.stock_count,
-            },
-          ]),
-        ),
-      );
+      setProducts(data || []);
     }
-
     setLoading(false);
   }
 
@@ -87,62 +77,14 @@ export default function AdminLedger() {
     return { units, value };
   }, [products]);
 
-  function updateDraft(id, field, value) {
-    setDrafts((current) => ({
-      ...current,
-      [id]: {
-        ...current[id],
-        [field]: value,
-      },
-    }));
-  }
-
-  async function saveProduct(product) {
-    setSavingId(product.id);
-    setError('');
-    setMessage('');
-
-    const draft = drafts[product.id];
-    const { error: updateError } = await supabase
-      .from('products')
-      .update({
-        price: Number(draft.price),
-        stock_count: Number(draft.stock_count),
-      })
-      .eq('id', product.id);
-
-    setSavingId('');
-
-    if (updateError) {
-      setError(updateError.message);
-      return;
-    }
-
-    setProducts((current) =>
-      current.map((item) =>
-        item.id === product.id
-          ? {
-              ...item,
-              price: Number(draft.price),
-              stock_count: Number(draft.stock_count),
-            }
-          : item,
-      ),
-    );
-    setMessage(`${product.title} updated.`);
-  }
-
   async function deleteProduct(product) {
     const confirmed = window.confirm(`Remove ${product.title} from stock ledger?`);
     if (!confirmed) return;
 
-    setSavingId(product.id);
     setError('');
     setMessage('');
 
     const { error: deleteError } = await supabase.from('products').delete().eq('id', product.id);
-
-    setSavingId('');
 
     if (deleteError) {
       setError(deleteError.message);
@@ -153,13 +95,106 @@ export default function AdminLedger() {
     setMessage(`${product.title} removed.`);
   }
 
+  // --- Edit Modal Functions ---
+
+  function openEditModal(product) {
+    setEditingProduct(product);
+    // Convert old single image_url to image_urls array if needed
+    const images = Array.isArray(product.image_urls) && product.image_urls.length > 0
+      ? product.image_urls
+      : (product.image_url ? [product.image_url] : []);
+
+    setForm({
+      title: product.title,
+      description: product.description,
+      category: product.category,
+      price: product.price,
+      stock_count: product.stock_count,
+      ai_extra_info: product.ai_extra_info || '',
+      image_urls: images
+    });
+  }
+
+  function closeEditModal() {
+    setEditingProduct(null);
+    setForm(null);
+  }
+
+  function updateForm(field, value) {
+    setForm(prev => ({ ...prev, [field]: value }));
+  }
+
+  async function removePhoto(index) {
+    if (!window.confirm("Remove this photo?")) return;
+    const newImages = [...form.image_urls];
+    newImages.splice(index, 1);
+    updateForm('image_urls', newImages);
+  }
+
+  async function uploadPhoto(file) {
+    if (!file) return;
+    setUploading(true);
+    
+    const ext = file.name.split('.').pop() || 'jpg';
+    const path = `${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('product-images')
+      .upload(path, file, { upsert: false });
+
+    if (uploadError) {
+      alert(`Upload failed: ${uploadError.message}`);
+      setUploading(false);
+      return;
+    }
+
+    const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(path);
+    updateForm('image_urls', [...form.image_urls, urlData.publicUrl]);
+    setUploading(false);
+  }
+
+  async function saveProductEdit(e) {
+    e.preventDefault();
+    setSaving(true);
+    
+    const updateData = {
+      title: form.title,
+      description: form.description,
+      category: form.category,
+      price: Number(form.price),
+      stock_count: Number(form.stock_count),
+      ai_extra_info: form.ai_extra_info,
+      image_urls: form.image_urls,
+      // Update legacy image_url to the first image if available
+      image_url: form.image_urls.length > 0 ? form.image_urls[0] : null
+    };
+
+    const { data, error: updateError } = await supabase
+      .from('products')
+      .update(updateData)
+      .eq('id', editingProduct.id)
+      .select()
+      .single();
+
+    setSaving(false);
+
+    if (updateError) {
+      alert(`Save failed: ${updateError.message}`);
+      return;
+    }
+
+    setProducts(current => current.map(item => item.id === editingProduct.id ? data : item));
+    setMessage(`${data.title} updated successfully.`);
+    closeEditModal();
+  }
+
   return (
     <section className="space-y-4">
       <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-end">
         <div>
           <h1 className="text-xl font-extrabold tracking-tight text-slate-950">Stock Ledger</h1>
           <p className="text-sm text-slate-500">
-            Review all inventory, update prices, adjust counts, and retire old stock.
+            Review all inventory, update details, and manage product photos.
           </p>
         </div>
         <button
@@ -267,7 +302,7 @@ export default function AdminLedger() {
                               : product.image_url
                           }
                           alt={product.title}
-                          className="h-12 w-10 rounded-md object-cover ring-1 ring-slate-200"
+                          className="h-12 w-10 shrink-0 rounded-md object-cover ring-1 ring-slate-200"
                         />
                         <div>
                           <p className="font-semibold text-slate-950">{product.title}</p>
@@ -287,33 +322,14 @@ export default function AdminLedger() {
                         {product.category}
                       </span>
                     </td>
-                    <td className="whitespace-nowrap px-3 py-2">
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={drafts[product.id]?.price ?? ''}
-                        onChange={(event) => updateDraft(product.id, 'price', event.target.value)}
-                        className="w-28 rounded-md border border-slate-300 px-2 py-1 text-sm outline-none focus:border-slate-900"
-                      />
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-2">
-                      <input
-                        type="number"
-                        min="0"
-                        step="1"
-                        value={drafts[product.id]?.stock_count ?? ''}
-                        onChange={(event) =>
-                          updateDraft(product.id, 'stock_count', event.target.value)
-                        }
-                        className="w-20 rounded-md border border-slate-300 px-2 py-1 text-sm outline-none focus:border-slate-900"
-                      />
+                    <td className="whitespace-nowrap px-3 py-2 font-semibold text-slate-700">
+                      {formatMoney(product.price)}
                     </td>
                     <td className="whitespace-nowrap px-3 py-2 font-semibold text-slate-700">
-                      {formatMoney(
-                        Number(drafts[product.id]?.price || 0) *
-                          Number(drafts[product.id]?.stock_count || 0),
-                      )}
+                      {product.stock_count}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-2 font-semibold text-slate-700">
+                      {formatMoney(Number(product.price || 0) * Number(product.stock_count || 0))}
                     </td>
                     <td className="whitespace-nowrap px-3 py-2 text-slate-600">
                       {formatDate(product.created_at)}
@@ -322,18 +338,16 @@ export default function AdminLedger() {
                       <div className="inline-flex gap-2">
                         <button
                           type="button"
-                          onClick={() => saveProduct(product)}
-                          disabled={savingId === product.id}
-                          className="inline-flex items-center gap-1 rounded-md border border-slate-300 px-2.5 py-1 text-xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                          onClick={() => openEditModal(product)}
+                          className="inline-flex items-center gap-1 rounded-md border border-slate-300 px-2.5 py-1 text-xs font-bold text-slate-700 hover:bg-slate-100"
                         >
-                          <Save size={13} />
-                          Save
+                          <Edit size={13} />
+                          Edit
                         </button>
                         <button
                           type="button"
                           onClick={() => deleteProduct(product)}
-                          disabled={savingId === product.id}
-                          className="inline-flex items-center gap-1 rounded-md border border-red-200 px-2.5 py-1 text-xs font-bold text-red-700 hover:bg-red-50 disabled:opacity-50"
+                          className="inline-flex items-center gap-1 rounded-md border border-red-200 px-2.5 py-1 text-xs font-bold text-red-700 hover:bg-red-50"
                         >
                           <Trash2 size={13} />
                           Remove
@@ -346,6 +360,159 @@ export default function AdminLedger() {
           </table>
         </div>
       </div>
+
+      {/* Slide-over Edit Modal */}
+      {editingProduct && form && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/40 backdrop-blur-sm">
+          <div className="slide-in flex h-full w-full max-w-md flex-col bg-white shadow-2xl overflow-y-auto">
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-5 py-4">
+              <div>
+                <h2 className="text-lg font-extrabold text-slate-950">Edit Product</h2>
+                <p className="text-xs text-slate-500">Update details and photos for {form.title}</p>
+              </div>
+              <button 
+                onClick={closeEditModal}
+                className="rounded-full p-2 hover:bg-slate-100"
+              >
+                <X size={18} className="text-slate-500" />
+              </button>
+            </div>
+
+            <form onSubmit={saveProductEdit} className="flex-1 p-5 space-y-5">
+              
+              {/* Photo Management */}
+              <div>
+                <span className="block text-xs font-extrabold uppercase tracking-wide text-slate-500 mb-2">
+                  Photos
+                </span>
+                <div className="grid grid-cols-3 gap-3">
+                  {form.image_urls.map((url, i) => (
+                    <div key={i} className="relative group aspect-[4/5] rounded-md border border-slate-200 overflow-hidden bg-slate-50">
+                      <img src={url} alt="" className="w-full h-full object-cover" />
+                      <button 
+                        type="button" 
+                        onClick={() => removePhoto(i)}
+                        className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                      >
+                        <Trash2 size={20} />
+                      </button>
+                    </div>
+                  ))}
+                  <label className="flex aspect-[4/5] cursor-pointer flex-col items-center justify-center gap-2 rounded-md border border-dashed border-slate-300 bg-slate-50 text-slate-500 hover:bg-slate-100 transition">
+                    {uploading ? (
+                      <RefreshCw size={20} className="animate-spin" />
+                    ) : (
+                      <>
+                        <ImagePlus size={24} />
+                        <span className="text-[10px] font-bold uppercase tracking-wide">Add Photo</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          disabled={uploading}
+                          onChange={(e) => uploadPhoto(e.target.files[0])}
+                        />
+                      </>
+                    )}
+                  </label>
+                </div>
+              </div>
+
+              {/* Text Fields */}
+              <label className="block">
+                <span className="text-xs font-extrabold uppercase tracking-wide text-slate-500">Title</span>
+                <input
+                  required
+                  value={form.title}
+                  onChange={(e) => updateForm('title', e.target.value)}
+                  className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900"
+                />
+              </label>
+
+              <div className="grid grid-cols-2 gap-4">
+                <label className="block">
+                  <span className="text-xs font-extrabold uppercase tracking-wide text-slate-500">Price (NPR)</span>
+                  <input
+                    required
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.price}
+                    onChange={(e) => updateForm('price', e.target.value)}
+                    className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-xs font-extrabold uppercase tracking-wide text-slate-500">Stock Count</span>
+                  <input
+                    required
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={form.stock_count}
+                    onChange={(e) => updateForm('stock_count', e.target.value)}
+                    className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900"
+                  />
+                </label>
+              </div>
+
+              <label className="block">
+                <span className="text-xs font-extrabold uppercase tracking-wide text-slate-500">Category</span>
+                <select
+                  required
+                  value={form.category}
+                  onChange={(e) => updateForm('category', e.target.value)}
+                  className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold outline-none focus:border-slate-900"
+                >
+                  <option value="kurta">Kurta</option>
+                  <option value="saree">Saree</option>
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="text-xs font-extrabold uppercase tracking-wide text-slate-500">Description</span>
+                <textarea
+                  required
+                  rows="3"
+                  value={form.description}
+                  onChange={(e) => updateForm('description', e.target.value)}
+                  className="mt-1 w-full resize-none rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900"
+                />
+              </label>
+
+              <label className="block">
+                <span className="text-xs font-extrabold uppercase tracking-wide text-slate-500">AI Context Note</span>
+                <textarea
+                  rows="2"
+                  value={form.ai_extra_info}
+                  onChange={(e) => updateForm('ai_extra_info', e.target.value)}
+                  placeholder="Secret context for the AI Chatbot (e.g. popular for weddings, comes with extra thread)"
+                  className="mt-1 w-full resize-none rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900"
+                />
+                <p className="mt-1 text-xs text-slate-500">Hidden from customers, read by the AI assistant.</p>
+              </label>
+
+              <div className="pt-4 flex justify-end gap-3 sticky bottom-0 bg-white py-4 border-t border-slate-200 mt-6">
+                <button
+                  type="button"
+                  onClick={closeEditModal}
+                  className="px-4 py-2 text-sm font-bold text-slate-600 hover:text-slate-900"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving || uploading}
+                  className="inline-flex items-center gap-2 rounded-md bg-slate-900 px-5 py-2 text-sm font-bold text-white hover:bg-slate-800 disabled:opacity-50"
+                >
+                  <Save size={15} />
+                  {saving ? 'Saving...' : 'Save Product'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

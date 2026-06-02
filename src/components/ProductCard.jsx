@@ -8,7 +8,7 @@ const currencyFormatter = new Intl.NumberFormat('en-NP', {
   maximumFractionDigits: 0,
 });
 
-export default function ProductCard({ product, fallback = false, onOrder }) {
+export default function ProductCard({ product, onOrder }) {
   const images = useMemo(() => {
     const carouselImages = Array.isArray(product.image_urls) ? product.image_urls : [];
     const merged = [...carouselImages, product.image_url].filter(Boolean);
@@ -88,7 +88,6 @@ export default function ProductCard({ product, fallback = false, onOrder }) {
         <div className="mt-auto pt-4 flex flex-col gap-3">
           <div className="flex items-center justify-between border-t border-stone-100 pt-3 text-sm">
             <span className="font-semibold text-stone-700">{product.stock_count} in stock</span>
-            {fallback && <span className="text-xs font-semibold text-stone-400">Sample</span>}
           </div>
           <button
             type="button"

@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, PackageCheck, ShoppingBag, Sparkles } from 'lucide-react';
-import { fallbackProducts } from '../data/fallbackProducts.js';
-import { isSupabaseConfigured, supabase } from '../lib/supabase.js';
+import { supabase } from '../lib/supabase.js';
 
 const currencyFormatter = new Intl.NumberFormat('en-NP', {
   style: 'currency',
@@ -20,29 +19,6 @@ export default function ProductDetail() {
 
   useEffect(() => {
     async function fetchProduct() {
-      if (!isSupabaseConfigured) {
-        const fallbackProd = fallbackProducts.find((p) => p.id === productId);
-        if (fallbackProd) {
-          setProduct(fallbackProd);
-        } else {
-          setError('This product is no longer available.');
-        }
-        setLoading(false);
-        return;
-      }
-
-      const isFallback = String(productId).startsWith('fallback-');
-      if (isFallback) {
-        const fallbackProd = fallbackProducts.find((p) => p.id === productId);
-        if (fallbackProd) {
-          setProduct(fallbackProd);
-        } else {
-          setError('This product is no longer available.');
-        }
-        setLoading(false);
-        return;
-      }
-
       setLoading(true);
       setError('');
 

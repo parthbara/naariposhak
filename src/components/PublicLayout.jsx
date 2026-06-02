@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { Facebook, Instagram, MapPin, Phone, ShoppingBag, UserRound } from 'lucide-react';
-import { contactInfo, whatsappUrl } from '../data/contactInfo.js';
+import ChatAssistant from './ChatAssistant.jsx';
+import useSiteSettings from '../lib/useSiteSettings.js';
 
 const linkClass = ({ isActive }) =>
   `rounded-full px-3 py-2 text-sm font-bold transition sm:px-4 ${
@@ -8,8 +9,20 @@ const linkClass = ({ isActive }) =>
   }`;
 
 export default function PublicLayout() {
+  const { contactInfo, whatsappUrl, announcement } = useSiteSettings();
+
   return (
     <div className="min-h-screen bg-cream text-ink">
+      {/* Announcement Banner */}
+      {announcement?.enabled && announcement?.text && (
+        <div
+          className="px-4 py-2 text-center text-sm font-bold text-white"
+          style={{ background: announcement.color || '#8A1C2A' }}
+        >
+          {announcement.text}
+        </div>
+      )}
+
       <header className="sticky top-0 z-30 border-b border-maroon-100/70 bg-cream/92 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
           <NavLink to="/" className="flex min-w-0 items-center gap-2 sm:gap-3">
@@ -71,7 +84,7 @@ export default function PublicLayout() {
             <p className="text-sm font-bold uppercase tracking-wide text-white/60">Social</p>
             <div className="mt-3 space-y-2 text-sm text-white/85">
               <a
-                href="https://www.instagram.com/nari_poshak2022"
+                href={`https://www.instagram.com/${contactInfo.instagram}`}
                 className="flex items-center gap-2 transition hover:text-white"
               >
                 <Instagram size={15} />
@@ -91,6 +104,8 @@ export default function PublicLayout() {
           </div>
         </div>
       </footer>
+
+      <ChatAssistant />
     </div>
   );
 }
