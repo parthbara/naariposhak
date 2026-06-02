@@ -216,9 +216,9 @@ ${productContext}`;
                 {msg.role === 'user' ? (
                   msg.content
                 ) : (
-                  <ReactMarkdown className="prose prose-sm prose-stone max-w-none prose-p:leading-snug prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5">
-                    {msg.content}
-                  </ReactMarkdown>
+                  <div className="prose prose-sm prose-stone max-w-none prose-p:leading-snug prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5">
+                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  </div>
                 )}
               </div>
             </div>
