@@ -122,11 +122,10 @@ ${productContext}`;
         })),
       ];
 
-      const response = await fetch('/api/nvidia/v1/chat/completions', {
+      const response = await fetch('/.netlify/functions/chat', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           model,
