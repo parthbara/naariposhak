@@ -4,7 +4,6 @@ import useSiteSettings from '../lib/useSiteSettings.js';
 import { Bot, X, Send, User, Sparkles, RefreshCw } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
-const NVIDIA_BASE = 'https://integrate.api.nvidia.com/v1/chat/completions';
 const DEFAULT_MODEL = 'z-ai/glm-5.1';
 
 const quickQuestions = [
@@ -123,7 +122,7 @@ ${productContext}`;
         })),
       ];
 
-      const response = await fetch(NVIDIA_BASE, {
+      const response = await fetch('/api/nvidia/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
