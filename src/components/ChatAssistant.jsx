@@ -3,6 +3,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase.js';
 import useSiteSettings from '../lib/useSiteSettings.js';
 import { Bot, X, Send, User, Sparkles, RefreshCw } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { fallbackProducts } from '../data/fallbackProducts.js';
 
 const DEFAULT_MODEL = 'llama-3.3-70b-versatile';
 
@@ -51,12 +52,18 @@ export default function ChatAssistant() {
             `- **${p.title}** | Category: ${p.category} | Price: Rs. ${p.price} | Stock: ${p.stock_count} | ${p.description}`
           ).join('\n');
         } else {
-          rulesContext = `- CRITICAL: We currently have NO products in stock and NO products listed online. You MUST NOT list, invent, or suggest any products. If asked about clothing, state clearly that the store is currently empty and they should check back later or contact us on WhatsApp.`;
-          productContext = '## Inventory Status\nEmpty (0 items). Do not invent items.';
+          // Fallback to mock data if DB is empty
+          rulesContext = `- ONLY recommend products from the inventory below. NEVER invent product names, prices, or availability.`;
+          productContext = '## Current Inventory\n' + fallbackProducts.map((p) =>
+            `- **${p.title}** | Category: ${p.category} | Price: Rs. ${p.price} | Stock: ${p.stock || 5} | ${p.description}`
+          ).join('\n');
         }
       } else {
-        rulesContext = `- CRITICAL: We currently have NO products in stock. You MUST NOT list, invent, or suggest any products. If asked about clothing, state clearly that the store is currently empty.`;
-        productContext = '## Inventory Status\nNo live product data available. Do not invent items.';
+        // Fallback to mock data if no DB
+        rulesContext = `- ONLY recommend products from the inventory below. NEVER invent product names, prices, or availability.`;
+        productContext = '## Current Inventory\n' + fallbackProducts.map((p) =>
+          `- **${p.title}** | Category: ${p.category} | Price: Rs. ${p.price} | Stock: ${p.stock || 5} | ${p.description}`
+        ).join('\n');
       }
 
       const phone = contactInfo?.phone || '+977-9709611771';
@@ -70,11 +77,13 @@ Here is our current inventory:
 ${productContext}
 
 CRITICAL LANGUAGE RULES:
-1. You MUST match the user's language and script exactly.
-2. If the user writes in Romanized Nepali (e.g., "saree kasto chha"), you MUST reply entirely in Romanized Nepali.
-3. If the user writes in Devanagari Nepali, reply in Devanagari Nepali. 
-4. NEVER use Hindi words, phrases, or grammar (e.g., never say "आपको", "पसंद आया", "क्या", etc.). Ensure your Nepali is culturally accurate and natural.
+1. You MUST reply in the EXACT SAME LANGUAGE and SCRIPT as the user's input.
+2. If the user writes in English (e.g. "hello", "what is in stock?"), you MUST reply in English.
+3. If the user writes in Romanized Nepali (e.g., "saree kasto chha"), you MUST reply in Romanized Nepali.
+4. If the user writes in Devanagari Nepali, reply in Devanagari Nepali. 
+5. NEVER use Hindi words. NEVER default to Devanagari Nepali if the user writes in English or Romanized Nepali.
 
+${rulesContext}
 Do not mention that you are an AI unless asked. Keep answers concise, warm, and helpful. If a user asks about a product not in stock, politely let them know we don't have it right now. For payment/order queries, tell them they can checkout online and pay via QR code, then staff will review. Be welcoming. Use emojis occasionally.
 
 ## Shop Info
