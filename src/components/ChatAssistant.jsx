@@ -24,7 +24,6 @@ export default function ChatAssistant() {
   const messagesEndRef = useRef(null);
   const { contactInfo, aiConfig } = useSiteSettings();
 
-  const apiKey = import.meta.env.VITE_NVIDIA_API_KEY;
   const model = aiConfig?.model || DEFAULT_MODEL;
   const aiEnabled = aiConfig?.enabled !== false;
 
@@ -35,7 +34,7 @@ export default function ChatAssistant() {
   }, [messages]);
 
   const initChat = useCallback(async () => {
-    if (!apiKey || !aiEnabled) return;
+    if (!aiEnabled) return;
 
     try {
       let rulesContext = '';
@@ -96,13 +95,13 @@ ${productContext}`;
       console.error(err);
       setError('Failed to initialize assistant.');
     }
-  }, [apiKey, aiEnabled, contactInfo]);
+  }, [aiEnabled, contactInfo]);
 
   useEffect(() => {
-    if (isOpen && !ready && apiKey && aiEnabled) {
+    if (isOpen && !ready && aiEnabled) {
       initChat();
     }
-  }, [isOpen, ready, apiKey, aiEnabled, initChat]);
+  }, [isOpen, ready, aiEnabled, initChat]);
 
   async function handleSend(text) {
     const userMsg = (text || input).trim();
@@ -195,12 +194,7 @@ ${productContext}`;
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto bg-stone-50 p-4">
-        {!apiKey && (
-          <div className="rounded-md bg-amber-50 p-3 text-sm text-amber-800 ring-1 ring-amber-200">
-            AI assistant requires the VITE_NVIDIA_API_KEY in your .env file.
-          </div>
-        )}
-        {!aiEnabled && apiKey && (
+        {!aiEnabled && (
           <div className="rounded-md bg-stone-100 p-3 text-sm text-stone-600 ring-1 ring-stone-200">
             The AI assistant is currently disabled by the admin.
           </div>
@@ -273,7 +267,7 @@ ${productContext}`;
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={!ready || loading}
-            placeholder={!apiKey ? 'API key required...' : 'Ask me anything...'}
+            placeholder={!ready ? 'Loading assistant...' : 'Ask me anything...'}
             className="w-full rounded-full border border-stone-300 bg-stone-50 py-2.5 pl-4 pr-12 text-sm outline-none focus:border-maroon-700 focus:ring-1 focus:ring-maroon-700 disabled:opacity-50"
           />
           <button
