@@ -5,7 +5,7 @@ export const handler = async (event, context) => {
 
   try {
     const { messages, model } = JSON.parse(event.body);
-    const apiKey = process.env.VITE_NVIDIA_API_KEY || process.env.NVIDIA_API_KEY;
+    const apiKey = process.env.GROQ_API_KEY;
 
     if (!apiKey) {
       return { 
@@ -14,7 +14,7 @@ export const handler = async (event, context) => {
       };
     }
 
-    const response = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
