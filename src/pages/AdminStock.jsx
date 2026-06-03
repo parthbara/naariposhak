@@ -30,7 +30,8 @@ export default function AdminStock() {
     try {
       let seeded = 0;
       for (const p of fallbackProducts) {
-        const { id, ...productData } = p;
+        const productData = { ...p };
+        delete productData.id;
         productData.image_urls = [productData.image_url];
         
         const { error: insertError } = await supabase.from('products').insert([productData]);

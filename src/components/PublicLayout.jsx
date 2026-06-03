@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { Facebook, Instagram, MapPin, Phone, ShoppingBag, UserRound } from 'lucide-react';
+import { Facebook, Instagram, MapPin, Phone, ShoppingBag } from 'lucide-react';
 import ChatAssistant from './ChatAssistant.jsx';
 import useSiteSettings from '../lib/useSiteSettings.js';
 

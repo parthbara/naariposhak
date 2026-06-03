@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, ImagePlus, LockKeyhole, ReceiptText, RefreshCw } from 'lucide-react';
 import useSiteSettings from '../lib/useSiteSettings.js';
 import { isSupabaseConfigured, supabase } from '../lib/supabase.js';
@@ -12,7 +12,6 @@ const currencyFormatter = new Intl.NumberFormat('en-NP', {
 
 export default function Checkout() {
   const { productId } = useParams();
-  const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
