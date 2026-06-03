@@ -21,7 +21,7 @@ export const handler = async (event, context) => {
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: model || 'meta/llama-3.1-70b-instruct',
+        model: model || 'llama-3.3-70b-versatile',
         messages: messages,
         temperature: 0.2,
         top_p: 0.7,

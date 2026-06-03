@@ -144,8 +144,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Personal ordering section removed as requested */}
-
       <section id="collection" className="py-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
