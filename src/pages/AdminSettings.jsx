@@ -31,7 +31,7 @@ const ANNOUNCEMENT_COLORS = [
 ];
 
 const AI_MODELS = [
-  { value: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B (Versatile)' },
+  { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
   { value: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B' },
   { value: 'gemma2-9b-it', label: 'Gemma 2 9B' },
 ];
@@ -92,7 +92,7 @@ export default function AdminSettings() {
   // AI Assistant
   const [aiConfig, setAiConfig] = useState({
     enabled: false,
-    model: 'llama-3.3-70b-versatile',
+    model: 'gemini-2.5-flash',
   });
 
   // Landing Page
@@ -661,7 +661,7 @@ export default function AdminSettings() {
           <p className="font-bold text-slate-700">About these models</p>
           <ul className="mt-2 list-inside list-disc space-y-1 text-xs text-slate-500">
             <li>
-              <span className="font-bold text-slate-700">Llama 3.3 70B</span> — High-quality reasoning and comprehensive language support.
+              <span className="font-bold text-slate-700">Gemini 2.5 Flash</span> — High-quality reasoning and comprehensive language support from Google.
             </li>
             <li>
               <span className="font-bold text-slate-700">Mixtral 8x7B</span> — Fast and efficient MoE model, great for quick interactions.

@@ -5,7 +5,7 @@ import { Bot, X, Send, User, Sparkles, RefreshCw } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { fallbackProducts } from '../data/fallbackProducts.js';
 
-const DEFAULT_MODEL = 'llama-3.3-70b-versatile';
+const DEFAULT_MODEL = 'gemini-2.5-flash';
 
 const quickQuestions = [
   'What\'s in stock?',
@@ -25,7 +25,10 @@ export default function ChatAssistant() {
   const messagesEndRef = useRef(null);
   const { contactInfo, aiConfig } = useSiteSettings();
 
-  const model = aiConfig?.model || DEFAULT_MODEL;
+  let model = aiConfig?.model || DEFAULT_MODEL;
+  if (model.includes('llama') || model.includes('mixtral') || model.includes('gemma')) {
+    model = 'gemini-2.5-flash'; // Auto-upgrade legacy DB settings to Gemini
+  }
   const aiEnabled = aiConfig?.enabled !== false;
 
   useEffect(() => {
@@ -123,37 +126,48 @@ ${productContext}`;
     setError('');
 
     try {
-      const apiMessages = [
-        { role: 'system', content: systemPrompt },
-        ...newMessages.map((msg) => ({
-          role: msg.role === 'user' ? 'user' : 'assistant',
-          content: msg.content,
-        })),
-      ];
-
-      const response = await fetch('/.netlify/functions/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model,
-          messages: apiMessages,
-          temperature: 0.7,
-          top_p: 0.95,
-          max_tokens: 1024,
-        }),
-      });
-
-      if (!response.ok) {
-        const errBody = await response.text();
-        throw new Error(`API ${response.status}: ${errBody.slice(0, 120)}`);
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      if (!apiKey) {
+        throw new Error('VITE_GEMINI_API_KEY is missing in your .env file.');
       }
 
-      const data = await response.json();
-      const reply = data.choices?.[0]?.message?.content || "I didn't quite catch that. Could you try again?";
+      // Convert messages to Gemini format
+      const systemInstruction = { parts: [{ text: systemPrompt }] };
+      const contents = newMessages.map((msg) => ({
+        role: msg.role === 'user' ? 'user' : 'model',
+        parts: [{ text: msg.content }],
+      }));
 
-      setMessages((prev) => [...prev, { role: 'assistant', content: reply }]);
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            system_instruction: systemInstruction,
+            contents,
+            generationConfig: {
+              temperature: 0.4,
+              topP: 0.85,
+            },
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error?.message || 'Failed to fetch from Gemini');
+      }
+
+      const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', content: replyText },
+      ]);
     } catch (err) {
       console.error(err);
       setError('Connection issue. Please try again.');

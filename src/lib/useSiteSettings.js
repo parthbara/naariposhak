@@ -8,7 +8,7 @@ const defaultSiteMeta = {
   title: 'Nari Poshak | Kurtas, Sarees & Tailoring',
   description: 'Elegant women\'s wear — kurtas, sarees, and complete styling from Boudha, Kathmandu.',
 };
-const defaultAiConfig = { model: 'z-ai/glm-5.1', enabled: true };
+const defaultAiConfig = { model: 'gemini-2.5-flash', enabled: true };
 const defaultLandingPage = {
   heroSubtitle: "Kurtas, sarees & complete women's wear",
   heroTitle: "Nari Poshak",
