@@ -21,7 +21,7 @@ export const handler = async (event, context) => {
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: model || 'llama-3.3-70b-versatile',
+        model: 'llama-3.3-70b-versatile',
         messages: messages,
         temperature: 0.2,
         top_p: 0.7,
@@ -30,6 +30,9 @@ export const handler = async (event, context) => {
     });
 
     const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error?.message || 'API request failed');
+    }
     return {
       statusCode: 200,
       headers: {

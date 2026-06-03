@@ -4,7 +4,7 @@ import useSiteSettings from '../lib/useSiteSettings.js';
 import { Bot, X, Send, User, Sparkles, RefreshCw } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
-const DEFAULT_MODEL = 'z-ai/glm-5.1';
+const DEFAULT_MODEL = 'llama-3.3-70b-versatile';
 
 const quickQuestions = [
   'What\'s in stock?',
