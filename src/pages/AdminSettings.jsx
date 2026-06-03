@@ -31,9 +31,9 @@ const ANNOUNCEMENT_COLORS = [
 ];
 
 const AI_MODELS = [
-  { value: 'z-ai/glm-5.1', label: 'GLM 5.1 — Recommended' },
-  { value: 'stepfun-ai/step-3.7-flash', label: 'Step 3.7 Flash' },
-  { value: 'minimaxai/minimax-m2.7', label: 'MiniMax M2.7' },
+  { value: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B (Versatile)' },
+  { value: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B' },
+  { value: 'gemma2-9b-it', label: 'Gemma 2 9B' },
 ];
 
 async function fetchSetting(key) {
@@ -92,7 +92,7 @@ export default function AdminSettings() {
   // AI Assistant
   const [aiConfig, setAiConfig] = useState({
     enabled: false,
-    model: 'z-ai/glm-5.1',
+    model: 'llama-3.3-70b-versatile',
   });
 
   // Landing Page
@@ -104,6 +104,7 @@ export default function AdminSettings() {
       "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=900&q=85",
       "https://images.unsplash.com/photo-1610189012035-7e3fcbdaeb1a?auto=format&fit=crop&w=900&q=85"
     ],
+    rudrakshyaAdEnabled: true,
   });
 
   useEffect(() => {
@@ -660,16 +661,13 @@ export default function AdminSettings() {
           <p className="font-bold text-slate-700">About these models</p>
           <ul className="mt-2 list-inside list-disc space-y-1 text-xs text-slate-500">
             <li>
-              <span className="font-bold text-slate-700">GLM 5.1</span> — Well-rounded model with
-              strong multilingual support and fast responses. Best for general-purpose use.
+              <span className="font-bold text-slate-700">Llama 3.3 70B</span> — High-quality reasoning and comprehensive language support.
             </li>
             <li>
-              <span className="font-bold text-slate-700">Step 3.7 Flash</span> — Optimised for
-              speed. Great for quick customer queries with lower latency.
+              <span className="font-bold text-slate-700">Mixtral 8x7B</span> — Fast and efficient MoE model, great for quick interactions.
             </li>
             <li>
-              <span className="font-bold text-slate-700">MiniMax M2.7</span> — Strong reasoning
-              capabilities. Suited for complex product recommendations.
+              <span className="font-bold text-slate-700">Gemma 2 9B</span> — Lightweight model for basic queries.
             </li>
           </ul>
         </div>
@@ -753,6 +751,26 @@ export default function AdminSettings() {
               <span className="text-xs font-bold">Upload Image</span>
               <input type="file" accept="image/*" className="hidden" onChange={(e) => uploadHeroImage(e.target.files[0])} />
             </label>
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-admin">
+          <p className="text-xs font-extrabold uppercase tracking-wide text-slate-500">
+            Arun Rudrakshya Advertisement
+          </p>
+          <div className="mt-4 flex items-center gap-3">
+            <label className="relative inline-flex cursor-pointer items-center">
+              <input
+                type="checkbox"
+                checked={landingPage.rudrakshyaAdEnabled ?? true}
+                onChange={(e) => updateLandingPage('rudrakshyaAdEnabled', e.target.checked)}
+                className="peer sr-only"
+              />
+              <div className="h-6 w-11 rounded-full bg-slate-300 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:bg-slate-900 peer-checked:after:translate-x-full" />
+            </label>
+            <span className="text-sm font-bold text-slate-700">
+              {(landingPage.rudrakshyaAdEnabled ?? true) ? 'Advertisement Visible' : 'Advertisement Hidden'}
+            </span>
           </div>
         </div>
 

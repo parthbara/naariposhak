@@ -5,8 +5,6 @@ import ProtectedRoute from './components/ProtectedRoute.jsx';
 import Home from './pages/Home.jsx';
 import Shop from './pages/Shop.jsx';
 import Login from './pages/Login.jsx';
-import CustomerLogin from './pages/CustomerLogin.jsx';
-import CustomerProfile from './pages/CustomerProfile.jsx';
 import Checkout from './pages/Checkout.jsx';
 import ProductDetail from './pages/ProductDetail.jsx';
 import AdminOrders from './pages/AdminOrders.jsx';
@@ -23,8 +21,6 @@ export default function App() {
         <Route index element={<Home />} />
         <Route path="/shop" element={<Shop />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/customer-login" element={<CustomerLogin />} />
-        <Route path="/profile" element={<CustomerProfile />} />
         <Route path="/product/:productId" element={<ProductDetail />} />
         <Route path="/checkout/:productId" element={<Checkout />} />
       </Route>

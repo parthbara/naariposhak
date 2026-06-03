@@ -13,8 +13,6 @@ const currencyFormatter = new Intl.NumberFormat('en-NP', {
 export default function Checkout() {
   const { productId } = useParams();
   const navigate = useNavigate();
-  const [session, setSession] = useState(null);
-  const [authChecked, setAuthChecked] = useState(false);
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -26,6 +24,7 @@ export default function Checkout() {
   const [form, setForm] = useState({
     customer_name: '',
     customer_phone: '',
+    customer_email: '',
     customer_address: '',
     quantity: '1',
     notes: '',
@@ -45,41 +44,7 @@ export default function Checkout() {
     };
   }, [proofPreview]);
 
-  useEffect(() => {
-    async function loadSession() {
-      if (!isSupabaseConfigured) {
-        setAuthChecked(true);
-        return;
-      }
 
-      const {
-        data: { session: currentSession },
-      } = await supabase.auth.getSession();
-
-      setSession(currentSession);
-      setAuthChecked(true);
-
-      if (!currentSession) {
-        navigate('/customer-login', {
-          replace: true,
-          state: {
-            from: `/checkout/${productId}`,
-            authMessage: 'Please sign in before checkout.',
-          },
-        });
-        return;
-      }
-
-      const metadata = currentSession.user.user_metadata || {};
-      setForm((current) => ({
-        ...current,
-        customer_name: metadata.full_name || '',
-        customer_phone: metadata.phone || '',
-      }));
-    }
-
-    loadSession();
-  }, [navigate, productId]);
 
   useEffect(() => {
     async function fetchProduct() {
@@ -123,8 +88,8 @@ export default function Checkout() {
     setError('');
     setMessage('');
 
-    if (!session?.user || !product) {
-      setError('Please sign in and choose a valid product before placing an order.');
+    if (!product) {
+      setError('Please choose a valid product before placing an order.');
       return;
     }
 
@@ -137,7 +102,7 @@ export default function Checkout() {
 
     const orderId = crypto.randomUUID();
     const extension = proofFile.name.split('.').pop()?.toLowerCase() || 'png';
-    const proofPath = `${session.user.id}/${orderId}.${extension}`;
+    const proofPath = `guest/${orderId}.${extension}`;
 
     const { error: uploadError } = await supabase.storage
       .from('payment-proofs')
@@ -155,10 +120,9 @@ export default function Checkout() {
 
     const { error: orderInsertError } = await supabase.from('orders').insert({
       id: orderId,
-      customer_id: session.user.id,
       customer_name: form.customer_name.trim(),
       customer_phone: form.customer_phone.trim(),
-      customer_email: session.user.email,
+      customer_email: form.customer_email.trim() || null,
       customer_address: form.customer_address.trim() || null,
       quantity,
       product_id: product.id,
@@ -181,7 +145,7 @@ export default function Checkout() {
     setMessage('Order placed. Staff will manually check your payment proof and contact you.');
   }
 
-  if (loading || !authChecked) {
+  if (loading) {
     return (
       <section className="botanical-bg grid min-h-[72vh] place-items-center px-4 py-10">
         <div className="inline-flex items-center gap-3 rounded-lg bg-white px-5 py-4 text-sm font-bold text-maroon-800 shadow-soft ring-1 ring-maroon-100">
@@ -306,6 +270,16 @@ export default function Checkout() {
                       onChange={(event) => updateField('customer_phone', event.target.value)}
                       className="mt-1 w-full rounded-md border border-stone-200 px-3 py-2 text-sm outline-none focus:border-maroon-700"
                       placeholder="98XXXXXXXX"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-sm font-bold text-stone-700">Email</span>
+                    <input
+                      type="email"
+                      value={form.customer_email}
+                      onChange={(event) => updateField('customer_email', event.target.value)}
+                      className="mt-1 w-full rounded-md border border-stone-200 px-3 py-2 text-sm outline-none focus:border-maroon-700"
+                      placeholder="Optional"
                     />
                   </label>
                   <label className="block">

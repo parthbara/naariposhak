@@ -45,9 +45,6 @@ export default function PublicLayout() {
             <NavLink to="/shop" className={linkClass}>
               Shop
             </NavLink>
-            <NavLink to="/profile" className={linkClass} aria-label="Customer profile">
-              <UserRound size={16} />
-            </NavLink>
           </nav>
         </div>
       </header>
