@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ImagePlus, PackagePlus } from 'lucide-react';
 import { supabase } from '../lib/supabase.js';
+import { fallbackProducts } from '../data/fallbackProducts.js';
 
 const initialForm = {
   title: '',
@@ -20,6 +21,35 @@ export default function AdminStock() {
 
   function updateField(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
+  }
+
+  async function seedDemoStock() {
+    setLoading(true);
+    setError('');
+    setMessage('');
+    try {
+      let seeded = 0;
+      for (const p of fallbackProducts) {
+        const { id, ...productData } = p;
+        productData.image_urls = [productData.image_url];
+        
+        const { error: insertError } = await supabase.from('products').insert([productData]);
+        if (insertError) {
+          console.error(insertError);
+        } else {
+          seeded++;
+        }
+      }
+      if (seeded > 0) {
+        setMessage(`Successfully seeded ${seeded} demo products.`);
+      } else {
+        setError('Failed to seed products (they might already exist or there was an error).');
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleSubmit(event) {
@@ -217,7 +247,7 @@ export default function AdminStock() {
             </div>
           )}
 
-          <div className="sm:col-span-2">
+          <div className="sm:col-span-2 flex items-center gap-4">
             <button
               type="submit"
               disabled={loading}
@@ -225,6 +255,14 @@ export default function AdminStock() {
             >
               <PackagePlus size={17} />
               {loading ? 'Uploading...' : 'Add stock item'}
+            </button>
+            <button
+              type="button"
+              onClick={seedDemoStock}
+              disabled={loading}
+              className="inline-flex items-center gap-2 rounded-md bg-stone-200 px-4 py-2.5 text-sm font-bold text-stone-800 hover:bg-stone-300 disabled:opacity-60"
+            >
+              Seed Demo Stock
             </button>
           </div>
         </form>
