@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
+  ExternalLink,
+  Gem,
   Instagram,
   MapPin,
   PackageCheck,
@@ -12,6 +14,7 @@ import {
 import ProductCard from '../components/ProductCard.jsx';
 import useSiteSettings from '../lib/useSiteSettings.js';
 import { supabase } from '../lib/supabase.js';
+import { fallbackProducts } from '../data/fallbackProducts.js';
 
 const serviceCards = [
   {
@@ -43,7 +46,11 @@ export default function Home() {
         .select('*')
         .order('created_at', { ascending: false })
         .limit(3);
-      if (data) setFeatured(data);
+      if (data && data.length > 0) {
+        setFeatured(data);
+      } else {
+        setFeatured(fallbackProducts.slice(0, 3));
+      }
     }
     fetchFeatured();
   }, []);
@@ -196,6 +203,36 @@ export default function Home() {
               );
             })}
           </div>
+        </div>
+      </section>
+
+      <section className="border-y border-maroon-100 bg-white/78 py-8">
+        <div className="mx-auto flex max-w-7xl flex-col gap-5 px-4 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
+          <div className="flex items-start gap-4">
+            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-maroon-50 text-maroon-700 ring-1 ring-maroon-100">
+              <Gem size={20} />
+            </div>
+            <div>
+              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-maroon-700">
+                Also available
+              </p>
+              <h2 className="mt-1 font-serif text-2xl font-bold text-maroon-900">
+                Rudrakshyas for sale
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-stone-600">
+                Explore authentic Rudrakshya selections through Arun Rudraksha Store.
+              </p>
+            </div>
+          </div>
+          <a
+            href="https://arunrudrakshastore.com/"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-maroon-700 px-5 py-2.5 text-sm font-extrabold text-maroon-800 transition hover:bg-maroon-50 md:w-auto"
+          >
+            Visit store
+            <ExternalLink size={16} />
+          </a>
         </div>
       </section>
 
